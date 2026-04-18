@@ -17,9 +17,11 @@ import {
   Zap,
   Loader2,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  X
 } from "lucide-react";
 import Link from "next/link";
+import { VideoPlayer } from "@repo/ui/video-player";
 
 interface VideoData {
   id: string;
@@ -43,6 +45,7 @@ export default function VideosPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [mode, setMode] = useState<'transcode' | 'package'>('transcode');
+  const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage on mount
@@ -329,27 +332,59 @@ export default function VideosPage() {
           view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredVideos.map((video) => (
-                <VideoCard key={video.id} video={video} onDelete={() => deleteVideo(video.id)} />
+                <VideoCard 
+                  key={video.id} 
+                  video={video} 
+                  onDelete={() => deleteVideo(video.id)} 
+                  onPlay={() => video.status === 'READY' && setSelectedVideo(video)}
+                />
               ))}
             </div>
           ) : (
             <div className="space-y-4">
               {filteredVideos.map((video) => (
-                <VideoListRow key={video.id} video={video} onDelete={() => deleteVideo(video.id)} />
+                <VideoListRow 
+                  key={video.id} 
+                  video={video} 
+                  onDelete={() => deleteVideo(video.id)} 
+                  onPlay={() => video.status === 'READY' && setSelectedVideo(video)}
+                />
               ))}
             </div>
           )
         )}
       </main>
+
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-10">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedVideo(null)} />
+          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(220,38,38,0.2)] border border-white/10 animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setSelectedVideo(null)}
+              className="absolute top-6 right-6 z-[110] w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-all"
+            >
+              <X size={20} />
+            </button>
+            <VideoPlayer 
+              key={selectedVideo.id} 
+              src={`http://localhost:9000/streamify/${selectedVideo.hlsPath}`} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function VideoCard({ video, onDelete }: { video: VideoData, onDelete: () => void }) {
+function VideoCard({ video, onDelete, onPlay }: { video: VideoData, onDelete: () => void, onPlay: () => void }) {
   const isTranscoding = video.status === "TRANSCODING";
   
   return (
-    <div className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:bg-white/[0.08] transition-all hover:scale-[1.02] cursor-pointer shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+    <div 
+      onClick={onPlay}
+      className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:bg-white/[0.08] transition-all hover:scale-[1.02] cursor-pointer shadow-2xl animate-in fade-in zoom-in-95 duration-500"
+    >
       {/* Thumbnail */}
       <div className="relative aspect-video">
         <img src={video.status === 'READY' ? video.thumbnail : 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800'} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -441,11 +476,14 @@ function VideoCard({ video, onDelete }: { video: VideoData, onDelete: () => void
   );
 }
 
-function VideoListRow({ video, onDelete }: { video: VideoData, onDelete: () => void }) {
+function VideoListRow({ video, onDelete, onPlay }: { video: VideoData, onDelete: () => void, onPlay: () => void }) {
   const isTranscoding = video.status === "TRANSCODING";
 
   return (
-    <div className="group bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-6 hover:bg-white/[0.08] transition-all cursor-pointer shadow-xl animate-in fade-in slide-in-from-right-4 duration-500">
+    <div 
+      onClick={onPlay}
+      className="group bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-6 hover:bg-white/[0.08] transition-all cursor-pointer shadow-xl animate-in fade-in slide-in-from-right-4 duration-500"
+    >
       <div className="h-16 w-16 min-w-[64px] rounded-xl overflow-hidden relative">
         <img src={video.status === 'READY' ? video.thumbnail : 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800'} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
