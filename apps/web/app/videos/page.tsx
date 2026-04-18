@@ -368,7 +368,7 @@ export default function VideosPage() {
             </button>
             <VideoPlayer 
               key={selectedVideo.id} 
-              src={`http://localhost:9000/streamify/${selectedVideo.hlsPath}`} 
+              src={`${process.env.NEXT_PUBLIC_S3_URL || 'http://localhost:9000/streamify'}/${selectedVideo.hlsPath}`} 
             />
           </div>
         </div>

@@ -65,8 +65,8 @@ export default function Home() {
 
           if (state === 'completed') {
             clearInterval(pollStatus);
-            // Master playlist URL (MinIO endpoint for local dev)
-            const hlsUrl = `http://localhost:9000/streamify/${result.hlsPath}`;
+            // Master playlist URL (Cloudflare R2 or Local MinIO)
+            const hlsUrl = `${process.env.NEXT_PUBLIC_S3_URL || 'http://localhost:9000/streamify'}/${result.hlsPath}`;
             setVideoSrc(hlsUrl);
             setIsTranscoding(false);
             setUploadProgress(100);
