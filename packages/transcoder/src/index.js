@@ -5,13 +5,17 @@ const path = require('path');
 const fs = require('fs');
 const { transcodeToHLS } = require('./utils/transcode');
 const { Readable } = require('stream');
+const { pipeline } = require('stream/promises');
+
+// Load environment variables from root
+require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000', // MinIO default
+  region: process.env.S3_REGION || 'auto',
+  endpoint: process.env.S3_ENDPOINT,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'minioadmin',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'minioadmin',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
   forcePathStyle: true,
 });
@@ -34,7 +38,7 @@ const worker = new Worker('video-transcoding', async (job) => {
     const { Body } = await s3Client.send(new GetObjectCommand(downloadParams));
     
     const writeStream = fs.createWriteStream(localInputPath);
-    await finished(Readable.from(Body).pipe(writeStream));
+    await pipeline(Readable.from(Body), writeStream);
 
     // 2. Transcode / Package
     await transcodeToHLS(localInputPath, tempOutputDir, (progress) => {
@@ -47,7 +51,7 @@ const worker = new Worker('video-transcoding', async (job) => {
 
     console.log(`[${videoId}] ${mode} complete and uploaded.`);
     
-    // 4. Clean up
+    // 4. Clean up (delete the entire video temp folder)
     fs.rmSync(tempInputDir, { recursive: true, force: true });
     
     const playlistName = mode === 'transcode' ? 'master.m3u8' : 'v0/index.m3u8';
@@ -106,11 +110,4 @@ function getContentType(filePath) {
   if (filePath.endsWith('.m3u8')) return 'application/x-mpegURL';
   if (filePath.endsWith('.ts')) return 'video/MP2T';
   return 'application/octet-stream';
-}
-
-function finished(stream) {
-  return new Promise((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
-  });
 }
