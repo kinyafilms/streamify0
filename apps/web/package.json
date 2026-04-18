@@ -12,9 +12,19 @@
   },
   "dependencies": {
     "@repo/ui": "workspace:*",
+    "@aws-sdk/client-s3": "^3.000.0",
+    "@aws-sdk/s3-request-presigner": "^3.000.0",
+    "zod": "^3.0.0",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.0.0",
     "next": "16.2.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "lucide-react": "^0.477.0",
+    "tailwindcss": "4.2.2",
+    "@tailwindcss/postcss": "4.2.2",
+    "postcss": "^8.5.8",
+    "autoprefixer": "^10.4.27"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
