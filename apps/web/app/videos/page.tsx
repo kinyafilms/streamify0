@@ -42,6 +42,7 @@ export default function VideosPage() {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [mode, setMode] = useState<'transcode' | 'package'>('transcode');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage on mount
@@ -138,7 +139,7 @@ export default function VideosPage() {
       const transcodeRes = await fetch('/api/transcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId, rawPath: key }),
+        body: JSON.stringify({ videoId, rawPath: key, mode }),
       });
 
       if (!transcodeRes.ok) throw new Error('Transcoding trigger failed');
@@ -208,6 +209,20 @@ export default function VideosPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mr-2">
+              <button 
+                onClick={() => setMode('transcode')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'transcode' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+              >
+                Multi-Res
+              </button>
+              <button 
+                onClick={() => setMode('package')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'package' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+              >
+                Fast Package
+              </button>
+            </div>
             <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-all group">
                <RefreshCw size={16} className="group-active:rotate-180 transition-transform duration-500" />
                Refresh
