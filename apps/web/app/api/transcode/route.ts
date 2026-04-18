@@ -5,6 +5,7 @@ import { z } from 'zod';
 const TranscodeSchema = z.object({
   videoId: z.string(),
   rawPath: z.string(),
+  mode: z.enum(['transcode', 'package']).optional().default('transcode'),
 });
 
 // Reuse the same connection as the worker
@@ -18,11 +19,12 @@ const transcodingQueue = new Queue('video-transcoding', { connection });
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { videoId, rawPath } = TranscodeSchema.parse(body);
+    const { videoId, rawPath, mode } = TranscodeSchema.parse(body);
 
     const job = await transcodingQueue.add('transcode', {
       videoId,
       rawPath,
+      mode,
     });
 
     return NextResponse.json({

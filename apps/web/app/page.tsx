@@ -10,6 +10,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [isTranscoding, setIsTranscoding] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [mode, setMode] = useState<'transcode' | 'package'>('transcode');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleTranscodeClick = () => {
@@ -50,7 +51,7 @@ export default function Home() {
       const transcodeRes = await fetch('/api/transcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId, rawPath: key }),
+        body: JSON.stringify({ videoId, rawPath: key, mode }),
       });
 
       if (!transcodeRes.ok) throw new Error('Transcoding trigger failed');
@@ -132,33 +133,50 @@ export default function Home() {
             <p className="text-lg text-white/50 leading-relaxed max-w-lg">
               The ultimate open-source Video-on-Demand infrastructure. Adaptive streaming, global delivery, and a stunning YouTube-like player built for performance.
             </p>
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={handleTranscodeClick}
-                disabled={isUploading || isTranscoding}
-                className="px-8 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 transition-all hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center gap-2 disabled:opacity-50 disabled:scale-100"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Uploading... {uploadProgress}%
-                  </>
-                ) : isTranscoding ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Transcoding...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={20} />
-                    Start Transcoding
-                  </>
-                )}
-              </button>
-              <button className="px-8 py-4 bg-white/5 rounded-2xl font-bold border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2">
-                <Code size={18} />
-                View GitHub
-              </button>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-xl w-fit">
+                <button 
+                  onClick={() => setMode('transcode')}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'transcode' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                >
+                  Multi-Quality (HLS)
+                </button>
+                <button 
+                  onClick={() => setMode('package')}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'package' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                >
+                  Fast Package (Copy)
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handleTranscodeClick}
+                  disabled={isUploading || isTranscoding}
+                  className="px-8 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 transition-all hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center gap-2 disabled:opacity-50 disabled:scale-100"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      Uploading... {uploadProgress}%
+                    </>
+                  ) : isTranscoding ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      {mode === 'transcode' ? 'Transcoding...' : 'Packaging...'}
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={20} />
+                      {mode === 'transcode' ? 'Start Transcoding' : 'Fast Package'}
+                    </>
+                  )}
+                </button>
+                <button className="px-8 py-4 bg-white/5 rounded-2xl font-bold border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2">
+                  <Code size={18} />
+                  View GitHub
+                </button>
+              </div>
             </div>
           </div>
 

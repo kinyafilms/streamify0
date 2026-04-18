@@ -17,7 +17,7 @@ const s3Client = new S3Client({
 });
 
 const worker = new Worker('video-transcoding', async (job) => {
-  const { videoId, rawPath } = job.data;
+  const { videoId, rawPath, mode = 'transcode' } = job.data;
   const tempInputDir = path.join(__dirname, '../tmp', videoId);
   const tempOutputDir = path.join(__dirname, '../tmp', videoId, 'hls');
 
@@ -26,7 +26,7 @@ const worker = new Worker('video-transcoding', async (job) => {
   const inputFileName = path.basename(rawPath);
   const localInputPath = path.join(tempInputDir, inputFileName);
 
-  console.log(`[${videoId}] Starting transcoding for ${rawPath}...`);
+  console.log(`[${videoId}] Starting ${mode} for ${rawPath}...`);
 
   try {
     // 1. Download file from S3
@@ -36,21 +36,22 @@ const worker = new Worker('video-transcoding', async (job) => {
     const writeStream = fs.createWriteStream(localInputPath);
     await finished(Readable.from(Body).pipe(writeStream));
 
-    // 2. Transcode
+    // 2. Transcode / Package
     await transcodeToHLS(localInputPath, tempOutputDir, (progress) => {
-      console.log(`[${videoId}] Transcoding progress: ${progress}%`);
+      console.log(`[${videoId}] ${mode} progress: ${progress}%`);
       job.updateProgress(progress).catch(err => console.error('Progress update error:', err));
-    });
+    }, { mode });
 
     // 3. Upload HLS segments (.ts and .m3u8) back to S3
     await uploadFolderToS3(tempOutputDir, `videos/${videoId}/hls/`);
 
-    console.log(`[${videoId}] Transcoding complete and uploaded.`);
+    console.log(`[${videoId}] ${mode} complete and uploaded.`);
     
     // 4. Clean up
     fs.rmSync(tempInputDir, { recursive: true, force: true });
     
-    return { status: 'success', hlsPath: `videos/${videoId}/hls/master.m3u8` };
+    const playlistName = mode === 'transcode' ? 'master.m3u8' : 'v0/index.m3u8';
+    return { status: 'success', hlsPath: `videos/${videoId}/hls/${playlistName}` };
   } catch (error) {
     console.error(`[${videoId}] Job failed:`, error);
     throw error;
